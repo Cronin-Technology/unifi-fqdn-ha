@@ -6,7 +6,11 @@ import urllib3
 
 from homeassistant import config_entries
 from homeassistant.core import HomeAssistant
-from homeassistant.data_entry_flow import FlowResult
+
+try:
+    from homeassistant.config_entries import ConfigFlowResult as FlowResult
+except ImportError:
+    from homeassistant.data_entry_flow import FlowResult  # type: ignore[attr-defined]
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 

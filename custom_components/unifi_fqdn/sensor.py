@@ -17,9 +17,6 @@ async def async_setup_entry(
 ) -> None:
     coordinator: UnifiFqdnCoordinator = hass.data[DOMAIN][entry.entry_id]
 
-    # Wait for first refresh so we know which groups exist
-    await coordinator.async_config_entry_first_refresh()
-
     entities = [
         UnifiFqdnSensor(coordinator, group_name)
         for group_name in coordinator.data

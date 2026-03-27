@@ -1,0 +1,24 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "UniFi FQDN Updater",
+        "description": "Connect to your UniFi Dream Machine / Pro",
+        "data": {
+          "host": "UDM IP Address",
+          "api_key": "API Key",
+          "interval": "Update interval (seconds)",
+          "verify_ssl": "Verify SSL certificate"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect to UDM",
+      "invalid_auth": "Invalid API key",
+      "unknown": "Unexpected error"
+    },
+    "abort": {
+      "already_configured": "Device is already configured"
+    }
+  }
+}
