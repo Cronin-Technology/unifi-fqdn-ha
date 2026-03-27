@@ -5,7 +5,6 @@ import requests
 import urllib3
 
 from homeassistant import config_entries
-from homeassistant.core import HomeAssistant
 from homeassistant.helpers import selector
 
 try:
