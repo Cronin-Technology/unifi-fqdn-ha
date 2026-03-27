@@ -74,9 +74,10 @@ class UnifiFqdnGroupCountSensor(CoordinatorEntity, SensorEntity):
 
     @property
     def extra_state_attributes(self) -> dict:
-        if not self.coordinator.data:
-            return {}
-        return {"groups": [k.removeprefix("fqdn:") for k in self.coordinator.data.keys()]}
+        return {
+            "host": self.coordinator.host,
+            "groups": [k.removeprefix("fqdn:") for k in self.coordinator.data.keys()] if self.coordinator.data else [],
+        }
 
 
 class UnifiFqdnSensor(CoordinatorEntity, SensorEntity):
