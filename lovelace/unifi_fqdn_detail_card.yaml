@@ -1,0 +1,46 @@
+type: markdown
+title: Unifi FQDN 1458.obi-wan.org
+content: >-
+  {% set count = states('sensor.unifi_fqdn_group_count') %}
+  {% set last_run = states('sensor.unifi_fqdn_last_updated') %}
+  {% set summary = ['sensor.unifi_fqdn_last_updated', 'sensor.unifi_fqdn_group_count'] %}
+  {% set fqdn_sensors = states.sensor
+      | selectattr('entity_id', 'search', 'unifi_fqdn_')
+      | rejectattr('entity_id', 'in', summary)
+      | list %}
+      
+  ---
+
+  <ha-icon icon="mdi:check-circle-outline"></ha-icon> &nbsp;**Active Groups** &nbsp;`{{ count }} {{ 'group' if count == '1' else 'groups' }}`
+
+  <ha-icon icon="mdi:clock-outline"></ha-icon> &nbsp;**Last Run** &nbsp;`{% if last_run not in ['unknown', 'unavailable'] %}{{ relative_time(last_run | as_datetime) }} ago{% else %}never{% endif %}`
+
+
+  **Managed FQDN**
+  
+  ---
+  ---
+  ---
+  
+  {% if fqdn_sensors %}
+  {% for s in fqdn_sensors | sort(attribute='name') %}
+  {% set name = s.name | replace('Unifi FQDN: ', '') %}
+  {% set ips = s.attributes.get('resolved_ips', []) %}
+  {% if s.state == 'ok' %}{% set badge = '🟢' %}
+  {% elif s.state == 'error' %}{% set badge = '🔴' %}
+  {% elif s.state == 'no_ips' %}{% set badge = '🟡' %}
+  {% else %}{% set badge = '⚪' %}{% endif %}
+
+  <span>{{ badge }} {{ name }}</span>
+  
+  ---
+  
+  {% for ip in ips %}&nbsp;&nbsp;&nbsp;&nbsp;`{{ ip }}`
+  {% else %}&nbsp;&nbsp;&nbsp;&nbsp;*No IPs resolved*
+  {% endfor %}
+
+  ---
+  {% endfor %}
+  {% else %}
+  > ℹ️ No FQDN groups found. Create a firewall group in UniFi named `fqdn:<hostname>`.
+  {% endif %}
