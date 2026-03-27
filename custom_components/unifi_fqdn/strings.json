@@ -8,7 +8,8 @@
           "host": "UDM IP Address",
           "api_key": "API Key",
           "interval": "Update interval (seconds)",
-          "verify_ssl": "Verify SSL certificate"
+          "verify_ssl": "Verify SSL certificate",
+          "dns_resolver": "DNS Resolver"
         }
       }
     },
@@ -29,7 +30,8 @@
         "data": {
           "api_key": "API Key",
           "interval": "Update interval (seconds)",
-          "verify_ssl": "Verify SSL certificate"
+          "verify_ssl": "Verify SSL certificate",
+          "dns_resolver": "DNS Resolver"
         }
       }
     },

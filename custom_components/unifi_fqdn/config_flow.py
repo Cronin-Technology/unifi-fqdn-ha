@@ -6,6 +6,7 @@ import urllib3
 
 from homeassistant import config_entries
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import selector
 
 try:
     from homeassistant.config_entries import ConfigFlowResult as FlowResult
@@ -16,12 +17,27 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 DOMAIN = "unifi_fqdn"
 
+DNS_RESOLVER_OPTIONS = [
+    {"value": "1.1.1.1", "label": "Cloudflare (1.1.1.1)"},
+    {"value": "8.8.8.8", "label": "Google (8.8.8.8)"},
+]
+DEFAULT_DNS_RESOLVER = "1.1.1.1"
+
+DNS_RESOLVER_SELECTOR = selector.SelectSelector(
+    selector.SelectSelectorConfig(
+        options=DNS_RESOLVER_OPTIONS,
+        custom_value=True,
+        mode=selector.SelectSelectorMode.DROPDOWN,
+    )
+)
+
 STEP_USER_DATA_SCHEMA = vol.Schema(
     {
         vol.Required("host"): str,
         vol.Required("api_key"): str,
         vol.Optional("interval", default=300): int,
         vol.Optional("verify_ssl", default=False): bool,
+        vol.Optional("dns_resolver", default=DEFAULT_DNS_RESOLVER): DNS_RESOLVER_SELECTOR,
     }
 )
 
@@ -91,7 +107,7 @@ class UnifiFqdnConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
 
 class UnifiFqdnOptionsFlow(config_entries.OptionsFlow):
-    """Allow reconfiguring API key, interval, and SSL verification."""
+    """Allow reconfiguring API key, interval, SSL verification, and DNS resolver."""
 
     def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
         self._config_entry = config_entry
@@ -118,6 +134,10 @@ class UnifiFqdnOptionsFlow(config_entries.OptionsFlow):
                 vol.Required("api_key", default=current.get("api_key", "")): str,
                 vol.Optional("interval", default=current.get("interval", 300)): int,
                 vol.Optional("verify_ssl", default=current.get("verify_ssl", False)): bool,
+                vol.Optional(
+                    "dns_resolver",
+                    default=current.get("dns_resolver", DEFAULT_DNS_RESOLVER),
+                ): DNS_RESOLVER_SELECTOR,
             }
         )
 

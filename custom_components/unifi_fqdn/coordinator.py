@@ -17,9 +17,10 @@ _LOGGER = logging.getLogger(__name__)
 class UnifiFqdnCoordinator(DataUpdateCoordinator):
 
     def __init__(self, hass: HomeAssistant, config: dict) -> None:
-        self.host       = config["host"]
-        self.api_key    = config["api_key"]
-        self.verify_ssl = config.get("verify_ssl", False)
+        self.host         = config["host"]
+        self.api_key      = config["api_key"]
+        self.verify_ssl   = config.get("verify_ssl", False)
+        self.dns_resolver = config.get("dns_resolver", "1.1.1.1")
 
         super().__init__(
             hass,
@@ -45,12 +46,13 @@ class UnifiFqdnCoordinator(DataUpdateCoordinator):
     # DNS
     # ------------------------------------------------------------------ #
 
-    @staticmethod
-    def _resolve_fqdn(fqdn: str, record_types=("A",)) -> list[str]:
+    def _resolve_fqdn(self, fqdn: str, record_types=("A",)) -> list[str]:
+        resolver = dns.resolver.Resolver()
+        resolver.nameservers = [self.dns_resolver]
         ips = []
         for record_type in record_types:
             try:
-                answers = dns.resolver.resolve(fqdn, record_type)
+                answers = resolver.resolve(fqdn, record_type)
                 ips.extend(str(r) for r in answers)
             except (
                 dns.resolver.NoAnswer,
