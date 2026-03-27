@@ -1,7 +1,7 @@
 {
   "domain": "unifi_fqdn",
   "name": "UniFi FQDN Firewall Group Updater",
-  "version": "1.0.0",
+  "version": "1.01.0",
   "config_flow": true,
   "documentation": "https://github.com/Cronin-Technology/unifi-fqdn-ha",
   "requirements": ["dnspython==2.6.1"],

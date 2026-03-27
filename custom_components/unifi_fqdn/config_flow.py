@@ -52,6 +52,13 @@ class UnifiFqdnConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     VERSION = 1
 
+    @staticmethod
+    @config_entries.callback
+    def async_get_options_flow(
+        config_entry: config_entries.ConfigEntry,
+    ) -> "UnifiFqdnOptionsFlow":
+        return UnifiFqdnOptionsFlow(config_entry)
+
     async def async_step_user(
         self, user_input: dict | None = None
     ) -> FlowResult:
@@ -79,5 +86,43 @@ class UnifiFqdnConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return self.async_show_form(
             step_id="user",
             data_schema=STEP_USER_DATA_SCHEMA,
+            errors=errors,
+        )
+
+
+class UnifiFqdnOptionsFlow(config_entries.OptionsFlow):
+    """Allow reconfiguring API key, interval, and SSL verification."""
+
+    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
+        self._config_entry = config_entry
+
+    async def async_step_init(
+        self, user_input: dict | None = None
+    ) -> FlowResult:
+        errors: dict[str, str] = {}
+        current = {**self._config_entry.data, **self._config_entry.options}
+
+        if user_input is not None:
+            error = await self.hass.async_add_executor_job(
+                test_connection,
+                current["host"],
+                user_input["api_key"],
+                user_input["verify_ssl"],
+            )
+            if error is None:
+                return self.async_create_entry(title="", data=user_input)
+            errors["base"] = error
+
+        schema = vol.Schema(
+            {
+                vol.Required("api_key", default=current.get("api_key", "")): str,
+                vol.Optional("interval", default=current.get("interval", 300)): int,
+                vol.Optional("verify_ssl", default=current.get("verify_ssl", False)): bool,
+            }
+        )
+
+        return self.async_show_form(
+            step_id="init",
+            data_schema=schema,
             errors=errors,
         )

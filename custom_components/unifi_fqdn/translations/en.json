@@ -20,5 +20,23 @@
     "abort": {
       "already_configured": "Device is already configured"
     }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "UniFi FQDN Options",
+        "description": "Update connection settings for your UniFi Dream Machine",
+        "data": {
+          "api_key": "API Key",
+          "interval": "Update interval (seconds)",
+          "verify_ssl": "Verify SSL certificate"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect to UDM",
+      "invalid_auth": "Invalid API key",
+      "unknown": "Unexpected error"
+    }
   }
 }
