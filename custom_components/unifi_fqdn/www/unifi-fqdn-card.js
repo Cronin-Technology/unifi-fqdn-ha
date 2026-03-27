@@ -1,3 +1,12 @@
+function relativeTime(isoString) {
+  if (!isoString || isoString === "unknown" || isoString === "unavailable") return "never";
+  const diff = Math.floor((Date.now() - new Date(isoString).getTime()) / 1000);
+  if (diff < 60)    return `${diff}s ago`;
+  if (diff < 3600)  return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  return `${Math.floor(diff / 86400)}d ago`;
+}
+
 class UnifiFqdnCard extends HTMLElement {
 
   set hass(hass) {
@@ -10,18 +19,17 @@ class UnifiFqdnCard extends HTMLElement {
       this.content = this.querySelector("#unifi-fqdn-content");
     }
 
-    const config   = this._config;
-    const countEntity    = hass.states[config.count_entity];
-    const lastRunEntity  = hass.states[config.last_run_entity];
-    const count    = countEntity    ? countEntity.state    : "?";
-    const lastRun  = lastRunEntity  ? lastRunEntity.state  : "unknown";
+    const config        = this._config;
+    const countEntity   = hass.states[config.count_entity];
+    const lastRunEntity = hass.states[config.last_run_entity];
+    const count         = countEntity   ? countEntity.state  : "?";
+    const host          = countEntity?.attributes?.host ?? "UniFi FQDN";
 
-    // Collect all fqdn sensors
     const summary = [config.count_entity, config.last_run_entity];
     const fqdnSensors = Object.values(hass.states)
       .filter(e => e.entity_id.startsWith("sensor.unifi_fqdn_"))
       .filter(e => !summary.includes(e.entity_id))
-      .sort((a, b) => a.attributes.friendly_name?.localeCompare(b.attributes.friendly_name));
+      .sort((a, b) => (a.attributes.friendly_name ?? "").localeCompare(b.attributes.friendly_name ?? ""));
 
     const badge = state => {
       if (state === "ok")     return "🟢";
@@ -31,56 +39,39 @@ class UnifiFqdnCard extends HTMLElement {
     };
 
     const rows = fqdnSensors.map(s => {
-      const name = (s.attributes.friendly_name || s.entity_id)
-        .replace("Unifi FQDN ", "")
-        .replace("UniFi FQDN: ", "");
-      const ips = s.attributes.resolved_ips || [];
-      return `
-        <tr>
-          <td>${badge(s.state)}</td>
-          <td style="font-size:0.9em;">${name}</td>
-          <td style="font-size:0.85em;">${s.state}</td>
-          <td style="font-size:0.85em;">${ips.length ? ips.join("<br>") : "—"}</td>
-        </tr>
-      `;
+      const name = (s.attributes.friendly_name ?? s.entity_id).replace("Unifi FQDN: ", "");
+      return `<li style="padding:3px 0;font-size:0.95em;">${badge(s.state)}&nbsp;${name}</li>`;
     }).join("");
 
     this.content.innerHTML = `
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
         <ha-icon icon="mdi:shield-network-outline"></ha-icon>
-        <span style="font-size:1.1em;font-weight:500;">
-          ${countEntity?.attributes?.friendly_name ?? "UniFi FQDN"}
+        <span style="font-size:1.05em;font-weight:600;">${host}</span>
+      </div>
+
+      <div style="display:flex;gap:20px;font-size:0.85em;color:var(--secondary-text-color);margin-bottom:12px;">
+        <span>
+          <ha-icon icon="mdi:check-circle-outline"></ha-icon>
+          ${count} ${count === "1" ? "group" : "groups"}
+        </span>
+        <span>
+          <ha-icon icon="mdi:clock-outline"></ha-icon>
+          ${relativeTime(lastRunEntity?.state)}
         </span>
       </div>
 
-      <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:12px;">
-        <div>
-          <ha-icon icon="mdi:check-circle-outline"></ha-icon>
-          <strong>Active Groups</strong>
-          <code>${count} ${count === "1" ? "group" : "groups"}</code>
-        </div>
-        <div>
-          <ha-icon icon="mdi:clock-outline"></ha-icon>
-          <strong>Last Run</strong>
-          <code>${lastRun !== "unknown" && lastRun !== "unavailable" ? lastRun : "never"}</code>
-        </div>
+      <hr style="border:none;border-top:1px solid var(--divider-color);margin:0 0 12px;">
+
+      <div style="font-size:0.78em;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;color:var(--secondary-text-color);margin-bottom:8px;">
+        Managed FQDNs
       </div>
 
-      <hr style="margin-bottom:12px;">
-
-      ${fqdnSensors.length ? `
-        <table style="width:100%;border-collapse:collapse;">
-          <thead>
-            <tr style="opacity:0.6;font-size:0.8em;">
-              <th style="text-align:left;padding:4px 8px;"></th>
-              <th style="text-align:left;padding:4px 8px;">FQDN</th>
-              <th style="text-align:left;padding:4px 8px;">Status</th>
-              <th style="text-align:left;padding:4px 8px;">Resolved IPs</th>
-            </tr>
-          </thead>
-          <tbody>${rows}</tbody>
-        </table>
-      ` : `<p><em>No FQDN groups found. Name a UniFi group <code>fqdn:&lt;hostname&gt;</code>.</em></p>`}
+      ${fqdnSensors.length
+        ? `<ul style="list-style:none;margin:0;padding:0;">${rows}</ul>`
+        : `<p style="font-size:0.88em;font-style:italic;color:var(--secondary-text-color);">
+             No FQDN groups found. Name a UniFi group <code>fqdn:&lt;hostname&gt;</code>.
+           </p>`
+      }
     `;
   }
 
@@ -92,10 +83,6 @@ class UnifiFqdnCard extends HTMLElement {
   }
 
   getCardSize() { return 4; }
-
-  static getConfigElement() {
-    return document.createElement("unifi-fqdn-card-editor");
-  }
 
   static getStubConfig() {
     return {
