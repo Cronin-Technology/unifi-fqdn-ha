@@ -1,0 +1,34 @@
+type: markdown
+title: UniFi FQDN Firewall Groups
+content: >-
+  {% set count = states('sensor.unifi_fqdn_group_count') %}
+  {% set last_run = states('sensor.unifi_fqdn_last_updated') %}
+
+  <ha-icon icon="mdi:shield-network-outline"></ha-icon> &nbsp;
+  **{{ count }}** {{ 'group' if count == '1' else 'groups' }} active
+  &nbsp;&nbsp;|&nbsp;&nbsp;
+  <ha-icon icon="mdi:clock-outline"></ha-icon> &nbsp;
+  {% if last_run not in ['unknown', 'unavailable'] -%}
+    Last run **{{ relative_time(last_run | as_datetime) }}** ago
+  {%- else -%}
+    Last run **never**
+  {%- endif %}
+
+  ---
+
+  {% set summary = ['sensor.unifi_fqdn_last_updated', 'sensor.unifi_fqdn_group_count'] %}
+  {% set fqdn_sensors = states.sensor
+      | selectattr('entity_id', 'search', 'unifi_fqdn_')
+      | rejectattr('entity_id', 'in', summary)
+      | list %}
+  {% if fqdn_sensors %}
+  | FQDN | Status | Resolved IPs |
+  |------|--------|--------------|
+  {% for s in fqdn_sensors | sort(attribute='name') -%}
+  {% set name = s.name | replace('Unifi FQDN: ', '') %}
+  {% set ips  = s.attributes.get('resolved_ips', []) %}
+  | **{{ name }}** | {% if s.state == 'ok' %}✅ ok{% elif s.state == 'error' %}❌ error{% elif s.state == 'no_ips' %}⚠️ no IPs{% else %}{{ s.state }}{% endif %} | {{ ips | join(', ') if ips else '—' }} |
+  {% endfor %}
+  {% else %}
+  *No FQDN groups found. Create a firewall group in UniFi named `fqdn:<hostname>`.*
+  {% endif %}
