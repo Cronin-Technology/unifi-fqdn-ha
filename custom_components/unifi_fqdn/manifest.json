@@ -4,8 +4,7 @@
   "version": "1.0.0",
   "config_flow": true,
   "documentation": "https://github.com/Cronin-Technology/unifi-fqdn-ha",
-  "requirements": ["dnspython==2.6.1", "requests==2.31.0"],
+  "requirements": ["dnspython==2.6.1"],
   "iot_class": "local_polling",
-  "codeowners": ["@Cronin-Technology"],
-  "hacs": "1.6.0"
+  "codeowners": ["@Cronin-Technology"]
 }
