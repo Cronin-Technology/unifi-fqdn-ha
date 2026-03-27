@@ -5,7 +5,7 @@ import dns.resolver
 import requests
 import urllib3
 
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
@@ -21,6 +21,7 @@ class UnifiFqdnCoordinator(DataUpdateCoordinator):
         self.api_key      = config["api_key"]
         self.verify_ssl   = config.get("verify_ssl", False)
         self.dns_resolver = config.get("dns_resolver", "1.1.1.1")
+        self.last_ran: datetime | None = None
 
         super().__init__(
             hass,
@@ -100,7 +101,9 @@ class UnifiFqdnCoordinator(DataUpdateCoordinator):
     async def _async_update_data(self) -> dict:
         """Called by HA on every update interval. Returns state for sensors."""
         try:
-            return await self.hass.async_add_executor_job(self._update_all_groups)
+            result = await self.hass.async_add_executor_job(self._update_all_groups)
+            self.last_ran = datetime.now(timezone.utc)
+            return result
         except requests.HTTPError as e:
             raise UpdateFailed(f"HTTP error communicating with UDM: {e}") from e
         except Exception as e:
