@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from homeassistant.components.sensor import SensorEntity
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
@@ -17,20 +17,35 @@ async def async_setup_entry(
 ) -> None:
     coordinator: UnifiFqdnCoordinator = hass.data[DOMAIN][entry.entry_id]
 
-    entities = [
-        UnifiFqdnSensor(coordinator, group_name)
-        for group_name in coordinator.data
-    ]
-    async_add_entities(entities, update_before_add=False)
+    known_groups: set[str] = set()
+
+    @callback
+    def _add_new_entities() -> None:
+        new_groups = set(coordinator.data) - known_groups
+        if new_groups:
+            known_groups.update(new_groups)
+            async_add_entities(
+                [UnifiFqdnSensor(coordinator, name) for name in new_groups]
+            )
+
+    _add_new_entities()
+    entry.async_on_unload(coordinator.async_add_listener(_add_new_entities))
 
 
 class UnifiFqdnSensor(CoordinatorEntity, SensorEntity):
 
     def __init__(self, coordinator: UnifiFqdnCoordinator, group_name: str) -> None:
         super().__init__(coordinator)
-        self._group_name  = group_name
-        self._attr_name   = f"UniFi FQDN {group_name}"
+        self._group_name     = group_name
+        self._attr_name      = f"UniFi FQDN {group_name}"
         self._attr_unique_id = f"unifi_fqdn_{group_name}"
+
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        if self._group_name not in self.coordinator.data:
+            self.hass.async_create_task(self.async_remove())
+            return
+        super()._handle_coordinator_update()
 
     @property
     def native_value(self) -> str:
